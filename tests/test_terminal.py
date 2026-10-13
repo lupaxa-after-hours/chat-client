@@ -2,14 +2,22 @@
 
 from __future__ import annotations
 
+import re
+
 from lupaxa.chat_client.terminal import Screen
+
+_SGR = re.compile(r"\x1b\[[0-9;]*m")
+
+
+def _visible_len(text: str) -> int:
+    return len(_SGR.sub("", text))
 
 
 def _lines(screen: Screen) -> list[str]:
     rendered = screen.render()
     lines = rendered.split("\n")
     assert len(lines) == screen.rows
-    assert all(len(line) == screen.columns for line in lines)
+    assert all(_visible_len(line) == screen.columns for line in lines)
     return lines
 
 
@@ -106,6 +114,29 @@ def test_hidden_password_is_not_shifted_up() -> None:
     assert lines[4] == "look      "
     assert "sec" not in screen.render()
     assert screen.hidden is True
+
+
+def test_colour_codes_do_not_wrap_a_line_that_fits() -> None:
+    """A line that fits on screen stays one row when it contains colour codes."""
+    line = "\x1b[31ma\x1b[0m" * 6
+    screen = Screen(10, 6)
+    screen.add_server_text(line + "\n")
+    rows = _lines(screen)[:2]
+    filled = [row for row in rows if "a" in row]
+    assert filled == [rows[1]]
+    assert _visible_len(rows[1].rstrip(" ")) == 6
+
+
+def test_a_coloured_line_wraps_on_visible_characters() -> None:
+    """Wrapping ignores colour codes and keeps the colour on the next row."""
+    line = "\x1b[31m" + ("a" * 12) + "\x1b[0m"
+    screen = Screen(10, 8)
+    screen.add_server_text(line + "\n")
+    rows = _lines(screen)
+    assert rows[2].startswith("\x1b[31m" + "a" * 10)
+    assert rows[3].startswith("\x1b[31m" + "aa")
+    assert _visible_len(rows[2]) == 10
+    assert _visible_len(rows[3].rstrip(" ")) == 2
 
 
 def test_width_change_rewraps_from_the_original_line() -> None:

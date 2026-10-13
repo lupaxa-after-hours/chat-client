@@ -2,27 +2,61 @@
 
 from __future__ import annotations
 
+import re
+
 _SPECIAL = frozenset(
     {"left", "right", "backspace", "delete", "enter", "pageup", "pagedown", "end", "up", "down"}
 )
+_SGR = re.compile(r"\x1b\[[0-9;]*m")
+_RESET = "\x1b[0m"
+
+
+def _visible_len(text: str) -> int:
+    """Return the length of ``text`` once colour codes are ignored."""
+    return len(_SGR.sub("", text))
 
 
 def _fit(text: str, columns: int) -> str:
-    """Return ``text`` cut or padded to ``columns``."""
+    """Return ``text`` cut or padded to ``columns`` visible characters."""
     if columns <= 0:
         return ""
-    if len(text) > columns:
-        return text[:columns]
-    return text + " " * (columns - len(text))
+    shown = _wrap(text, columns)[0] if text else ""
+    gap = columns - _visible_len(shown)
+    if gap > 0:
+        shown += " " * gap
+    return shown
 
 
 def _wrap(line: str, columns: int) -> list[str]:
-    """Split ``line`` into pieces of ``columns`` characters."""
+    """Split ``line`` into pieces of ``columns`` visible characters."""
     if columns <= 0:
         return []
     if line == "":
         return [""]
-    return [line[index : index + columns] for index in range(0, len(line), columns)]
+    pieces: list[str] = []
+    current = ""
+    visible = 0
+    pending = ""
+    pos = 0
+    while pos < len(line):
+        match = _SGR.match(line, pos)
+        if match is not None:
+            code = match.group()
+            current += code
+            pending = "" if code == _RESET else pending + code
+            pos = match.end()
+            continue
+        if visible == columns:
+            if pending:
+                current += _RESET
+            pieces.append(current)
+            current = pending
+            visible = 0
+        current += line[pos]
+        visible += 1
+        pos += 1
+    pieces.append(current)
+    return pieces
 
 
 class Screen:
