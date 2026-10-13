@@ -269,3 +269,12 @@ def test_up_and_down_do_not_recall_commands() -> None:
     screen.key("up")
     screen.key("down")
     assert _lines(screen)[5] == "          "
+
+
+def test_a_bell_is_pending_once_and_not_stored() -> None:
+    """One warn beeps once, and a redraw has no bell."""
+    screen = Screen(80, 24)
+    screen.add_server_text("\n\n-=> Ada warn you: stop that\n\n\a\a")
+    assert screen.take_bell() is True
+    assert screen.take_bell() is False
+    assert "\a" not in screen.render()

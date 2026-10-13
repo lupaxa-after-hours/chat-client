@@ -76,6 +76,7 @@ class Screen:
         self._partial = ""
         self._cr_pending = False
         self._sealed_prompt = False
+        self.pending_bell = False
 
     @property
     def hidden(self) -> bool:
@@ -101,6 +102,11 @@ class Screen:
         When the user has paged up, the offset grows with the new
         wrapped lines so the same rows stay on screen.
         """
+        if text == "":
+            return
+        if "\a" in text:
+            self.pending_bell = True
+            text = text.replace("\a", "")
         if text == "":
             return
         dropped = False
@@ -141,6 +147,12 @@ class Screen:
         if self._partial:
             self._prompt = self._partial
             self._sealed_prompt = True
+
+    def take_bell(self) -> bool:
+        """Return whether a bell is pending, and clear that flag."""
+        pending = self.pending_bell
+        self.pending_bell = False
+        return pending
 
     def set_hidden(self, hidden: bool) -> None:
         """Hide or show the characters on the bottom line."""

@@ -121,6 +121,8 @@ def _paint(screen: Screen) -> None:
     row = max(screen.rows, 1)
     column = screen.cursor_column()
     sys.stdout.write(f"\x1b[H\x1b[J{text}\x1b[{row};{column}H")
+    if screen.take_bell():
+        sys.stdout.write("\a")
     sys.stdout.flush()
 
 
