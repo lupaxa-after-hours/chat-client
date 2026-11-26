@@ -22,7 +22,7 @@ into the history.
 pip install lupaxa-chat-client
 ```
 
-Requires Python 3.10+.
+Requires Python 3.11 to 3.15.
 
 > **Note:** `chat-client` only runs in a terminal. It stops before connecting
 > when standard input or standard output is not a terminal.

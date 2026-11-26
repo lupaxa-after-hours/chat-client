@@ -8,7 +8,7 @@ dynamic = ["version"]
 description = "A terminal client for the chat server, keeping server text separate from what you are typing."
 readme = "README.md"
 license = { file = "LICENCE" }
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 authors = [
   { name = "The Lupaxa Project" }
 ]
@@ -20,11 +20,11 @@ classifiers = [
   "License :: OSI Approved :: MIT License",
   "Operating System :: OS Independent",
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3.14",
+  "Programming Language :: Python :: 3.15",
   "Topic :: Communications :: Chat",
 ]
 dependencies = [
@@ -69,7 +69,7 @@ packages = ["src/lupaxa"]
 
 [tool.ruff]
 line-length = 200
-target-version = "py310"
+target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "S", "UP", "SIM", "C4", "ISC", "D", "ANN", "PT"]
@@ -90,10 +90,10 @@ quote-style = "double"
 [tool.pyright]
 typeCheckingMode = "standard"
 enableTypeIgnoreComments = true
-pythonVersion = "3.10"
+pythonVersion = "3.11"
 
 [tool.mypy]
-python_version = "3.10"
+python_version = "3.11"
 files = ["src", "tests"]
 mypy_path = "src"
 explicit_package_bases = true
