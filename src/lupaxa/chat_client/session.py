@@ -291,6 +291,9 @@ def _host_checker(host: str, port: int) -> Any:  # noqa: ANN401
     """Return a client that checks the host key during the handshake."""
     import asyncssh
 
+    target_host = host
+    target_port = port
+
     class _Gate(asyncssh.SSHClient):
         """Accept a new or known key and refuse a changed one."""
 
@@ -298,16 +301,10 @@ def _host_checker(host: str, port: int) -> Any:  # noqa: ANN401
             """Start with no refusal."""
             self.refusal: str | None = None
 
-        def validate_host_public_key(
-            self,
-            host_name: str,
-            addr: str,
-            port_number: int,
-            key: object,
-        ) -> bool:
+        def validate_host_public_key(self, host: str, addr: str, port: int, key: object) -> bool:
             """Remember a first key. Refuse a key that does not match."""
-            del host_name, addr, port_number
-            refusal = _fingerprint_error(host, port, key)
+            del host, addr, port
+            refusal = _fingerprint_error(target_host, target_port, key)
             if refusal is not None:
                 self.refusal = refusal
                 return False
@@ -325,15 +322,7 @@ async def _ssh_main(host: str, port: int, screen: Screen) -> int:
     conn = None
     try:
         try:
-            conn = await asyncssh.connect(
-                host,
-                port=port,
-                username="chat",
-                client_keys=None,
-                agent_path=None,
-                known_hosts=b"\n",
-                client_factory=lambda: checker,
-            )
+            conn = await asyncssh.connect(host, port=port, username="chat", client_keys=None, agent_path=None, known_hosts=b"\n", client_factory=lambda: checker)
         except KeyboardInterrupt:
             return 130
         except (OSError, asyncssh.Error) as exc:
@@ -448,14 +437,7 @@ async def _read_chunk(process: Any) -> bytes | None:  # noqa: ANN401
     return b""
 
 
-async def _ssh_turns(
-    process: Any,  # noqa: ANN401
-    screen: Screen,
-    app: App,
-    keys_in: asyncio.Queue[bytes],
-    server_out: asyncio.Queue[bytes],
-    stdin_error: asyncio.Event,
-) -> int:
+async def _ssh_turns(process: Any, screen: Screen, app: App, keys_in: asyncio.Queue[bytes], server_out: asyncio.Queue[bytes], stdin_error: asyncio.Event) -> int:  # noqa: ANN401
     """Apply keyboard and server bytes until ctrl-c or stdout EOF."""
     pending = b""
     _paint(screen)
@@ -544,18 +526,11 @@ def _apply_server(app: App, events: list[_Event]) -> bool:
     return False
 
 
-async def _wait_ssh(
-    keys_in: asyncio.Queue[bytes],
-    server_out: asyncio.Queue[bytes],
-) -> list[_Event]:
+async def _wait_ssh(keys_in: asyncio.Queue[bytes], server_out: asyncio.Queue[bytes]) -> list[_Event]:
     """Wait briefly for keyboard bytes or a stdout chunk."""
     incoming = asyncio.create_task(keys_in.get())
     outgoing = asyncio.create_task(server_out.get())
-    done, pending = await asyncio.wait(
-        {incoming, outgoing},
-        timeout=0.2,
-        return_when=asyncio.FIRST_COMPLETED,
-    )
+    done, pending = await asyncio.wait({incoming, outgoing}, timeout=0.2, return_when=asyncio.FIRST_COMPLETED)
     events: list[_Event] = []
     if incoming in done:
         events.append(("in", incoming.result()))

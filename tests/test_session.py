@@ -71,9 +71,7 @@ def test_changed_host_key_is_an_error(tmp_path: Path) -> None:
     """A new fingerprint is stored. A different one returns the refusal line."""
     path = tmp_path / "known_hosts"
     assert host_error(path, "127.0.0.1", 9022, "aaa") is None
-    assert host_error(path, "127.0.0.1", 9022, "bbb") == (
-        "Host key for 127.0.0.1:9022 has changed."
-    )
+    assert host_error(path, "127.0.0.1", 9022, "bbb") == "Host key for 127.0.0.1:9022 has changed."
 
 
 def test_open_process_requests_the_pty() -> None:
@@ -123,18 +121,9 @@ def test_telnet_connect_sends_the_window_size(monkeypatch: pytest.MonkeyPatch) -
         return sock
 
     monkeypatch.setattr("lupaxa.chat_client.session.socket.create_connection", connect)
-    monkeypatch.setattr(
-        "lupaxa.chat_client.session.raw_terminal",
-        __import__("contextlib").nullcontext,
-    )
-    monkeypatch.setattr(
-        "lupaxa.chat_client.session.shutil.get_terminal_size",
-        lambda fallback=(80, 24): os.terminal_size((80, 24)),
-    )
-    monkeypatch.setattr(
-        "lupaxa.chat_client.session.select.select",
-        lambda reads, writes, errors, timeout=None: ([sock], [], []),
-    )
+    monkeypatch.setattr("lupaxa.chat_client.session.raw_terminal", __import__("contextlib").nullcontext)
+    monkeypatch.setattr("lupaxa.chat_client.session.shutil.get_terminal_size", lambda fallback=(80, 24): os.terminal_size((80, 24)))
+    monkeypatch.setattr("lupaxa.chat_client.session.select.select", lambda reads, writes, errors, timeout=None: ([sock], [], []))
     assert run_client("telnet", "127.0.0.1", 9000) == 1
     assert sent[:1] == [TelnetParser().window_size(80, 24)]
 
@@ -158,11 +147,7 @@ class _RecordingRaw:
 
 
 @pytest.mark.parametrize("error", [ConnectionResetError, BlockingIOError, BrokenPipeError])
-def test_telnet_recv_errors_are_connection_closed(
-    monkeypatch: pytest.MonkeyPatch,
-    capsys: pytest.CaptureFixture[str],
-    error: type[OSError],
-) -> None:
+def test_telnet_recv_errors_are_connection_closed(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], error: type[OSError]) -> None:
     """Recv failures close the socket, report it, and exit 1."""
     closed: list[bool] = []
 
@@ -187,23 +172,14 @@ def test_telnet_recv_errors_are_connection_closed(
         return sock
 
     monkeypatch.setattr("lupaxa.chat_client.session.socket.create_connection", connect)
-    monkeypatch.setattr(
-        "lupaxa.chat_client.session.raw_terminal",
-        __import__("contextlib").nullcontext,
-    )
-    monkeypatch.setattr(
-        "lupaxa.chat_client.session.select.select",
-        lambda reads, writes, errors, timeout=None: ([sock], [], []),
-    )
+    monkeypatch.setattr("lupaxa.chat_client.session.raw_terminal", __import__("contextlib").nullcontext)
+    monkeypatch.setattr("lupaxa.chat_client.session.select.select", lambda reads, writes, errors, timeout=None: ([sock], [], []))
     assert run_client("telnet", "127.0.0.1", 9000) == 1
     assert closed == [True]
     assert "Connection closed." in capsys.readouterr().out
 
 
-def test_telnet_first_flush_error_closes_the_socket(
-    monkeypatch: pytest.MonkeyPatch,
-    capsys: pytest.CaptureFixture[str],
-) -> None:
+def test_telnet_first_flush_error_closes_the_socket(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
     """A window-size send that fails still closes the socket."""
     closed: list[bool] = []
 
@@ -225,10 +201,7 @@ def test_telnet_first_flush_error_closes_the_socket(
         return sock
 
     monkeypatch.setattr("lupaxa.chat_client.session.socket.create_connection", connect)
-    monkeypatch.setattr(
-        "lupaxa.chat_client.session.raw_terminal",
-        __import__("contextlib").nullcontext,
-    )
+    monkeypatch.setattr("lupaxa.chat_client.session.raw_terminal", __import__("contextlib").nullcontext)
     assert run_client("telnet", "127.0.0.1", 9000) == 1
     assert closed == [True]
     assert "Connection closed." in capsys.readouterr().out
@@ -300,12 +273,7 @@ def test_telnet_idle_timeout_does_not_repaint(monkeypatch: pytest.MonkeyPatch) -
     sock = _Sock()
     calls = {"n": 0}
 
-    def select(
-        reads: list[object],
-        writes: list[object],
-        errors: list[object],
-        timeout: float | None = None,
-    ) -> tuple[list[object], list[object], list[object]]:
+    def select(reads: list[object], writes: list[object], errors: list[object], timeout: float | None = None) -> tuple[list[object], list[object], list[object]]:
         del reads, errors, timeout
         if writes:
             return ([], list(writes), [])
@@ -315,22 +283,14 @@ def test_telnet_idle_timeout_does_not_repaint(monkeypatch: pytest.MonkeyPatch) -
         return ([sock], [], [])
 
     monkeypatch.setattr("lupaxa.chat_client.session._paint", paint)
-    monkeypatch.setattr(
-        "lupaxa.chat_client.session.socket.create_connection",
-        lambda address, timeout=None: sock,
-    )
-    monkeypatch.setattr(
-        "lupaxa.chat_client.session.raw_terminal",
-        __import__("contextlib").nullcontext,
-    )
+    monkeypatch.setattr("lupaxa.chat_client.session.socket.create_connection", lambda address, timeout=None: sock)
+    monkeypatch.setattr("lupaxa.chat_client.session.raw_terminal", __import__("contextlib").nullcontext)
     monkeypatch.setattr("lupaxa.chat_client.session.select.select", select)
     assert run_client("telnet", "127.0.0.1", 9000) == 1
     assert paints == [1, 1]
 
 
-def test_telnet_write_retries_a_short_or_blocking_write(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_telnet_write_retries_a_short_or_blocking_write(monkeypatch: pytest.MonkeyPatch) -> None:
     """A short write and a blocking write are retried. The socket stays open."""
     written = bytearray()
     reads: list[int] = []
@@ -359,36 +319,21 @@ def test_telnet_write_retries_a_short_or_blocking_write(
 
     sock = _Sock()
 
-    def select(
-        reads_ready: list[object],
-        writes: list[object],
-        errors: list[object],
-        timeout: float | None = None,
-    ) -> tuple[list[object], list[object], list[object]]:
+    def select(reads_ready: list[object], writes: list[object], errors: list[object], timeout: float | None = None) -> tuple[list[object], list[object], list[object]]:
         del reads_ready, errors, timeout
         if writes:
             return ([], list(writes), [])
         return ([sock], [], [])
 
-    monkeypatch.setattr(
-        "lupaxa.chat_client.session.socket.create_connection",
-        lambda address, timeout=None: sock,
-    )
-    monkeypatch.setattr(
-        "lupaxa.chat_client.session.raw_terminal",
-        __import__("contextlib").nullcontext,
-    )
+    monkeypatch.setattr("lupaxa.chat_client.session.socket.create_connection", lambda address, timeout=None: sock)
+    monkeypatch.setattr("lupaxa.chat_client.session.raw_terminal", __import__("contextlib").nullcontext)
     monkeypatch.setattr("lupaxa.chat_client.session.select.select", select)
     assert run_client("telnet", "127.0.0.1", 9000) == 1
     assert reads
     assert written[:1] == bytes([255])
 
 
-def test_ssh_checks_the_host_key_during_the_handshake(
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
-    capsys: pytest.CaptureFixture[str],
-) -> None:
+def test_ssh_checks_the_host_key_during_the_handshake(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     """The handshake refuses a changed key and does not offer user keys."""
     import asyncssh
 
@@ -421,10 +366,7 @@ def test_ssh_checks_the_host_key_during_the_handshake(
     monkeypatch.setattr("lupaxa.chat_client.session._known_hosts", lambda: path)
     monkeypatch.setattr(asyncssh, "connect", connect)
     monkeypatch.setattr("lupaxa.chat_client.session.open_process", open_process)
-    monkeypatch.setattr(
-        "lupaxa.chat_client.session.raw_terminal",
-        __import__("contextlib").nullcontext,
-    )
+    monkeypatch.setattr("lupaxa.chat_client.session.raw_terminal", __import__("contextlib").nullcontext)
     assert run_client("ssh", "127.0.0.1", 9022) == 1
     assert opened == []
     assert "Host key for 127.0.0.1:9022 has changed." in capsys.readouterr().out

@@ -4,9 +4,7 @@ from __future__ import annotations
 
 import re
 
-_SPECIAL = frozenset(
-    {"left", "right", "backspace", "delete", "enter", "pageup", "pagedown", "end", "up", "down"}
-)
+_SPECIAL = frozenset({"left", "right", "backspace", "delete", "enter", "pageup", "pagedown", "end", "up", "down"})
 _SGR = re.compile(r"\x1b\[[0-9;]*m")
 _RESET = "\x1b[0m"
 

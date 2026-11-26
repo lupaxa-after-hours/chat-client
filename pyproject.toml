@@ -68,7 +68,7 @@ include = [
 packages = ["src/lupaxa"]
 
 [tool.ruff]
-line-length = 100
+line-length = 200
 target-version = "py310"
 
 [tool.ruff.lint]
