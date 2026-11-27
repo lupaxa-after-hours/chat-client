@@ -10,13 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from lupaxa.chat_client.session import (
-    decode_keys,
-    host_error,
-    open_process,
-    raw_terminal,
-    run_client,
-)
+from lupaxa.chat_client.session import decode_keys, host_error, open_process, raw_terminal, run_client
 from lupaxa.chat_client.ssh import pty_options
 from lupaxa.chat_client.telnet import TelnetParser
 
